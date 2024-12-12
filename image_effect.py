@@ -1,9 +1,40 @@
 import cv2
 import numpy as np
+from PIL import Image, ImageTk
 
 # 전역 변수
 current_image = None  # 현재 이미지
 original_image = None  # 원본 이미지
+selection = None
+
+undo_stack = []
+redo_stack = []
+
+def push_to_undo(img):
+    """현재 상태를 undo 스택에 저장"""
+    global undo_stack
+    if img is not None:
+        undo_stack.append(img.copy())
+
+def pop_from_undo():
+    """undo 스택에서 상태를 가져옴"""
+    global undo_stack
+    if undo_stack:
+        return undo_stack.pop()
+    return None
+
+def push_to_redo(img):
+    """현재 상태를 redo 스택에 저장"""
+    global redo_stack
+    if img is not None:
+        redo_stack.append(img.copy())
+
+def pop_from_redo():
+    """redo 스택에서 상태를 가져옴"""
+    global redo_stack
+    if redo_stack:
+        return redo_stack.pop()
+    return None
 
 
 def set_image(img):  # 현재 이미지& 원본 이미지 설정
@@ -16,40 +47,64 @@ def get_image():  # 현재 이미지 반환
     return current_image
 
 
-def retro_filter():  # 레트로 필터
-    global current_image
-    # 누리끼리한 2010년대 필터 느낌
-    b, g, r = cv2.split(current_image)  # BRG 채널 분리
-    r = cv2.add(r, 50)
-    g = cv2.add(g, 30)
-    current_image = cv2.merge((b, g, r))  # 채널 병합
+def set_selection(cord):
+    global selection
+    selection = cord
+    
+
+def apply_to_selection_or_full(effect_func):
+    global current_image, selection
+    if current_image is None:
+        return
+
+    if selection:
+        x1, y1, x2, y2 = selection
+        roi = current_image[y1:y2, x1:x2]  # 선택 영역 가져오기
+        roi = effect_func(roi)  # 선택 영역에 효과 적용
+        current_image[y1:y2, x1:x2] = roi  # 원본 이미지에 반영
+    else:
+        current_image = effect_func(current_image)  # 전체 이미지에 효과 적용
+        
+        
+def retro_filter():
+    def effect(image):
+        b, g, r = cv2.split(image)
+        r = cv2.add(r, 50)
+        g = cv2.add(g, 30)
+        return cv2.merge((b, g, r))
+
+    apply_to_selection_or_full(effect)
 
 
 def vintage_filter():  # 빈티지 필터
-    global current_image
-    # 필름노이즈 추가 및 색감조정
-    b, g, r = cv2.split(current_image)  # BRG 채널 분리
-    r = cv2.add(r, 40)
-    g = cv2.add(g, 20)
-    b = cv2.add(b, 10)
-    current_image = cv2.merge((b, g, r))  # 채널 병합
+    def effect(image) :
+        
+        global current_image
+        # 필름노이즈 추가 및 색감조정
+        b, g, r = cv2.split(current_image)  # BRG 채널 분리
+        r = cv2.add(r, 40)
+        g = cv2.add(g, 20)
+        b = cv2.add(b, 10)
+        current_image = cv2.merge((b, g, r))  # 채널 병합
 
-    # 대비 감소 및 밝기 감소
-    current_image = cv2.convertScaleAbs(current_image, alpha=0.8, beta=-10)
+        # 대비 감소 및 밝기 감소
+        current_image = cv2.convertScaleAbs(current_image, alpha=0.8, beta=-10)
 
-    # 따뜻한 갈색 톤 오버레이
-    overlay = np.full_like(current_image, (20, 10, 0))  # 약간의 갈색 필터
-    current_image = cv2.addWeighted(current_image, 0.9, overlay, 0.1, 0)
+        # 따뜻한 갈색 톤 오버레이
+        overlay = np.full_like(current_image, (20, 10, 0))  # 약간의 갈색 필터
+        current_image = cv2.addWeighted(current_image, 0.9, overlay, 0.1, 0)
 
-    # 필름 노이즈 텍스쳐 추가
-    noise_texture = cv2.imread(
-        "FilmNoise.png", cv2.IMREAD_COLOR
-    )  # 노이즈 텍스처 크기 조정
-    noise_texture = cv2.resize(
-        noise_texture, (current_image.shape[1], current_image.shape[0])
-    )
-    # 텍스쳐 합성
-    current_image = cv2.addWeighted(current_image, 0.95, noise_texture, 0.3, 0)
+        # 필름 노이즈 텍스쳐 추가
+        noise_texture = cv2.imread(
+            "FilmNoise.png", cv2.IMREAD_COLOR
+        )  # 노이즈 텍스처 크기 조정
+        noise_texture = cv2.resize(
+            noise_texture, (current_image.shape[1], current_image.shape[0])
+        )
+        # 텍스쳐 합성
+        current_image = cv2.addWeighted(current_image, 0.95, noise_texture, 0.3, 0)
+        return current_image
+    apply_to_selection_or_full(effect)
 
 
 def adjust_brightness(n):  # 밝기 조정
@@ -136,3 +191,24 @@ def edge_emphasize(): # 윤곽선 강조(스케치 효과)
 def original(): # 원본 이미지로 되돌리기
     global current_image, original_image
     current_image = original_image
+    
+    
+def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
+    """픽셀 유동화 로직"""
+    h, w = img.shape[:2]
+    dx, dy = end_point[0] - start_point[0], end_point[1] - start_point[1]
+
+    output = img.copy()
+    for y in range(max(0, start_point[1] - radius), min(h, start_point[1] + radius)):
+        for x in range(max(0, start_point[0] - radius), min(w, start_point[0] + radius)):
+            distance = np.sqrt((x - start_point[0]) ** 2 + (y - start_point[1]) ** 2)
+            if distance < radius:
+                ratio = (radius - distance) / radius
+                new_x = int(x + dx * ratio * strength / 100)
+                new_y = int(y + dy * ratio * strength / 100)
+
+                new_x = np.clip(new_x, 0, w - 1)
+                new_y = np.clip(new_y, 0, h - 1)
+
+                output[y, x] = img[new_y, new_x]
+    return output
