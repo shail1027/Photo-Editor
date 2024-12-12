@@ -59,9 +59,6 @@ def ui(root):  # UI를 구성하는 함수
         frame, from_=0.5, to=2.0, resolution=0.1, orient=tk.HORIZONTAL, label="밝기"
     )
     slider.pack(pady=5)
-    tk.Button(
-        frame, text="밝기 조절", command=lambda: adjust_brightness(slider.get())
-    ).pack(pady=5)
 
     # 색조 조절 슬라이더&버튼
     hue_slider = tk.Scale(
@@ -90,10 +87,15 @@ def ui(root):  # UI를 구성하는 함수
 
     tk.Button(right_frame, text="픽셀 유동화", command=liquify_tool).pack(pady=5)
 
-    # 빈티지 필터 버튼
-    # tk.Button(right_frame, text="빈티지 필터", command=apply_vintage_filter).pack(
-    #     pady=5
-    # )
+    tk.Button(right_frame, text="빈티지 필터", command=apply_custom_filter).pack(pady=5)
+    
+    tk.Button(right_frame, text="화장 필터", command=adjust_color_highlight).pack(pady=5)
+
+    tk.Button(right_frame, text="페퍼 필터", command=adjust_salt_pepper_removal).pack(
+        pady=5
+    )
+
+    tk.Button(right_frame, text="y2k 필터", command=apply_temp_filter).pack(pady=5)
 
     # 윤곽선 강조(윤곽선 스케치 느낌의 필터) 버튼
     tk.Button(right_frame, text="윤곽선 강조", command=apply_edgeS_filter).pack(pady=5)
@@ -164,10 +166,6 @@ def apply_blur_filter():  # 블러 효과를 적용하는 함수
 #     record_and_apply(image_effect.adjust_contrast, arg)
 
 
-def adjust_brightness(arg):  # 밝기 조절을 적용하는 함수
-    record_and_apply(image_effect.adjust_brightness, arg)
-
-
 def record_and_apply(effect_function, *args):
     """
     작업 기록을 자동으로 저장하고, 효과를 적용
@@ -182,8 +180,16 @@ def record_and_apply(effect_function, *args):
     display_image()
 
 
+def apply_custom_filter():
+    record_and_apply(image_effect.custom_filter)
+
+
 def apply_edgeS_filter():  # 윤곽선 강조(윤곽선 스케치) 효과를 적용하는 함수
     record_and_apply(image_effect.edge_emphasize)
+
+
+def apply_temp_filter():
+    record_and_apply(image_effect.temp_filter)
 
 
 def adjust_contrast(arg):
@@ -232,11 +238,89 @@ def redo():
         print("다시 실행할 작업이 없습니다!")
 
 
+def apply_salt_pepper_removal(event):
+    """
+    마우스 클릭으로 Resized 이미지에서 Salt-and-Pepper 잡티 제거를 적용
+    """
+    global resized_image
+
+    if resized_image is None:
+        print("Error: Resized 이미지가 없습니다.")
+        return
+
+        # 클릭 좌표 가져오기
+    x, y = event.x, event.y
+
+        # 잡티 제거 적용
+    record_and_apply(image_effect.remove_salt_pepper, resized_image, (x, y))
+
+
+
+def adjust_salt_pepper_removal():
+    """
+    Salt-and-Pepper 제거 모드를 활성화
+    """
+    global label
+
+    # 마우스 이벤트 바인딩
+    label.bind("<ButtonPress-1>", on_mouse_press)
+    label.bind("<B1-Motion>", apply_salt_pepper_removal)
+    label.bind("<ButtonRelease-1>", on_mouse_release)
+
+
 # 유동화 UI 로직
 def liquify_tool():
     """픽셀 유동화 도구 활성화"""
     label.bind("<ButtonPress-1>", on_mouse_press)
     label.bind("<B1-Motion>", apply_liquify)
+    label.bind("<ButtonRelease-1>", on_mouse_release)
+    
+def apply_color_adjustment(event):
+    """
+    마우스 드래그로 특정 영역에 색상 강조 적용
+    """
+    global start_point, resized_image
+
+    if resized_image is None:
+        print("Error: Resized 이미지가 없습니다.")
+        return
+
+    if start_point is None:
+        return
+
+    try:
+        # 드래그 끝점
+        end_point = (event.x, event.y)
+
+        # 유효한 좌표인지 확인
+        if not (0 <= start_point[0] < resized_image.shape[1] and
+                0 <= start_point[1] < resized_image.shape[0]):
+            print("Error: Start point is out of bounds.")
+            return
+
+        if not (0 <= end_point[0] < resized_image.shape[1] and
+                0 <= end_point[1] < resized_image.shape[0]):
+            print("Error: End point is out of bounds.")
+            return
+
+        # record_and_apply를 통해 색상 강조 실행
+        record_and_apply(
+            image_effect.apply_makeup, resized_image, start_point, end_point
+        )
+
+        # 시작점 갱신
+        start_point = end_point
+
+    except Exception as e:
+        print(f"Error applying color adjustment: {e}")
+
+def adjust_color_highlight():
+    """
+    색상 강조 모드 활성화 (예: 블러셔, 립스틱)
+    """
+    global label
+    label.bind("<ButtonPress-1>", on_mouse_press)
+    label.bind("<B1-Motion>", apply_color_adjustment)
     label.bind("<ButtonRelease-1>", on_mouse_release)
 
 
@@ -265,7 +349,9 @@ def apply_liquify(event):
     print(f"Start: {start_point_mapped}, End: {end_point}")
 
     # record_and_apply를 통해 liquify_pixels 실행
-    record_and_apply(image_effect.liquify_pixels, resized_image, start_point_mapped, end_point)
+    record_and_apply(
+        image_effect.liquify_pixels, resized_image, start_point_mapped, end_point
+    )
 
     # 새로운 시작점 업데이트
     start_point = end_point
@@ -293,6 +379,7 @@ def on_mouse_release(event):
     """마우스 릴리스 시 선택 초기화"""
     global start_point
     start_point = None
+
 
 def display_image():
     """현재 이미지를 Label에 표시 (800x800에 맞춰 원본 비율 유지)"""
