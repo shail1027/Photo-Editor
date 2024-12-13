@@ -194,10 +194,27 @@ def edge_detection(): # 윤곽선 추출
     current_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR) 
 
 
-def blur_filter(): # 블러 효과
+def apply_blur(image, start_point, end_point, radius):
+    """블러 효과를 적용하는 함수"""
     global current_image
-    kernel_size = 5
-    current_image = cv2.GaussianBlur(current_image, (kernel_size, kernel_size), 0)
+    x, y = end_point
+    print(radius)
+    # 이미지 크기 가져오기
+    h, w = image.shape[:2]
+
+    # ROI 경계 설정
+    x_start, x_end = max(0, x - radius), min(w, x + radius)
+    y_start, y_end = max(0, y - radius), min(h, y + radius)
+
+    # ROI 추출
+    roi = image[y_start:y_end, x_start:x_end].copy()
+
+    # 블러링 필터 적용
+    blurred_roi = cv2.GaussianBlur(roi, (15, 15), 0)
+
+    # 원본 이미지에 반영
+    image[y_start:y_end, x_start:x_end] = blurred_roi
+    current_image = image
 
 
 def edge_emphasize(): # 윤곽선 강조(스케치 효과)

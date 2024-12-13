@@ -14,12 +14,13 @@ brush_color = (0, 0, 255)
 
 # 기본 브러쉬 크기와 강도
 brush_size = 20
+brush_size_blur= 20
 
 scale = None
 
 
 def ui(root):  # UI를 구성하는 함수
-    global label
+    global label, brush_size_blur
 
     # 왼쪽 사이드 UI
     frame = tk.Frame(root, width=200, height=600)
@@ -80,7 +81,17 @@ def ui(root):  # UI를 구성하는 함수
     tk.Button(frame, text="윤곽선 추출", command=apply_edge_filter).pack(pady=5)
 
     # 블러 효과 버튼
-    tk.Button(frame, text="블러 효과", command=apply_blur_filter).pack(pady=5)
+    brush_size_slider_blur = tk.Scale(
+    frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
+    )
+    brush_size_slider_blur.pack(pady=5)
+    brush_size_slider_blur.bind("<Motion>", lambda event: blur_brush_size_change(brush_size_slider_blur.get()))
+    
+# 블러 효과 활성화 버튼
+    tk.Button(
+    frame,
+    text="블러 효과",
+    command=apply_blur_filter).pack(pady=5)
 
     # 선명 효과(=샤프닝 필터) 버튼
     tk.Button(frame, text="선명 효과", command=apply_sharpen_filter).pack(pady=5)
@@ -96,7 +107,6 @@ def ui(root):  # UI를 구성하는 함수
     brush_size_slider = tk.Scale(
     frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
     )
-    
     brush_size_slider.pack(pady=5)
     brush_size_slider.bind("<Motion>", lambda event: on_brush_size_change(brush_size_slider.get()))
     makeup_button = tk.Button(frame, text="Makeup", command=adjust_color_highlight)
@@ -138,6 +148,10 @@ def choose_color():
 def on_brush_size_change(value):
     global brush_size
     brush_size = int(value)
+
+def blur_brush_size_change(value):
+    global brush_size_blur
+    brush_size_blur = int(value)
 
 def open_img():
     """이미지 열기 (한글 경로 지원 및 여백 포함)"""
@@ -185,13 +199,42 @@ def apply_edge_filter():  # 윤곽선 추출 필터를 적용하는 함수
 def apply_sharpen_filter():  # 선명 효과 필터를 적용하는 함수
     record_and_apply(image_effect.sharpen_filter)
 
+def apply_blur_adjustment(event):
+    """
+    마우스 드래그로 특정 영역에 블러 효과 적용
+    """
+    global start_point, resized_image, brush_size_blur
 
+    if resized_image is None:
+        print("Error: Resized 이미지가 없습니다.")
+        return
+
+    if start_point is None:
+        return
+
+    try:
+        # 드래그 끝점
+        end_point = (event.x, event.y)
+
+        # 유효한 좌표인지 확인
+
+        # 블러링 필터 적용
+        record_and_apply(
+            image_effect.apply_blur, resized_image, start_point, end_point, brush_size_blur
+        )
+
+        # 시작점 갱신
+        start_point = end_point
+
+    except Exception as e:
+        print(f"Error applying blur adjustment: {e}")
+        
+        
 def apply_blur_filter():  # 블러 효과를 적용하는 함수
-    record_and_apply(image_effect.blur_filter)
-
-
-# def apply_vintage_filter():  # 빈티지 필터를 적용하는 함수
-#     record_and_apply(image_effect.adjust_contrast, arg)
+    global label
+    label.bind("<ButtonPress-1>", on_mouse_press)
+    label.bind("<B1-Motion>", apply_blur_adjustment)
+    label.bind("<ButtonRelease-1>", on_mouse_release)
 
 
 def record_and_apply(effect_function, *args):

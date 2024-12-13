@@ -14,3 +14,4 @@ root.title("영상처리-기말프로젝트")  # 윈도우 타이틀
 root.geometry("1100x800")  # 윈도우 크기
 ui(root)  # ui.py파일의 ui함수 호출
 root.mainloop()
+ 
