@@ -1,6 +1,6 @@
 import tkinter as tk
-from tkinter import filedialog, colorchooser, messagebox  # 파일 열기/저장을 위한 모듈
-from PIL import Image, ImageTk, ImageDraw  # 이미지 처리를 위한 Pillow 라이브러리
+from tkinter import filedialog, colorchooser  # 파일 열기/저장을 위한 모듈
+from PIL import Image, ImageTk  # 이미지 처리를 위한 Pillow 라이브러리
 import cv2
 import image_effect
 import numpy as np
@@ -14,13 +14,13 @@ brush_color = (0, 0, 255)
 
 # 기본 브러쉬 크기와 강도
 brush_size = 20
-brush_size_blur= 20
+brush_size_blur = 20
 
 scale = None
 
 
 def ui(root):  # UI를 구성하는 함수
-    global label, brush_size_blur    # 왼쪽 사이드 UI
+    global label, brush_size_blur  # 왼쪽 사이드 UI
     frame = tk.Frame(root, width=200, height=600)
     frame.place(x=0, y=0)
 
@@ -80,16 +80,15 @@ def ui(root):  # UI를 구성하는 함수
 
     # 블러 효과 버튼
     brush_size_slider_blur = tk.Scale(
-    frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
+        frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
     )
     brush_size_slider_blur.pack(pady=5)
-    brush_size_slider_blur.bind("<Motion>", lambda event: blur_brush_size_change(brush_size_slider_blur.get()))
-    
-# 블러 효과 활성화 버튼
-    tk.Button(
-    frame,
-    text="블러 효과",
-    command=apply_blur_filter).pack(pady=5)
+    brush_size_slider_blur.bind(
+        "<Motion>", lambda event: blur_brush_size_change(brush_size_slider_blur.get())
+    )
+
+    # 블러 효과 활성화 버튼
+    tk.Button(frame, text="블러 효과", command=apply_blur_filter).pack(pady=5)
 
     # 선명 효과(=샤프닝 필터) 버튼
     tk.Button(frame, text="선명 효과", command=apply_sharpen_filter).pack(pady=5)
@@ -101,20 +100,20 @@ def ui(root):  # UI를 구성하는 함수
     tk.Button(right_frame, text="픽셀 유동화", command=liquify_tool).pack(pady=5)
 
     tk.Button(right_frame, text="빈티지 필터", command=apply_custom_filter).pack(pady=5)
-    
+
     brush_size_slider = tk.Scale(
-    frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
+        frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
     )
     brush_size_slider.pack(pady=5)
-    brush_size_slider.bind("<Motion>", lambda event: on_brush_size_change(brush_size_slider.get()))
+    brush_size_slider.bind(
+        "<Motion>", lambda event: on_brush_size_change(brush_size_slider.get())
+    )
     makeup_button = tk.Button(frame, text="Makeup", command=adjust_color_highlight)
     makeup_button.pack(pady=5)
-    
+
     color_button = tk.Button(frame, text="색상 선택", command=choose_color)
     color_button.pack(pady=5)
-    
-    
-    
+
     tk.Button(right_frame, text="페퍼 필터", command=adjust_salt_pepper_removal).pack(
         pady=5
     )
@@ -133,24 +132,28 @@ def ui(root):  # UI를 구성하는 함수
     tk.Button(right_frame, text="되돌리기", command=undo).pack(pady=5)
     tk.Button(right_frame, text="다시 실행", command=redo).pack(pady=5)
     # tk.Button(right_frame, text="올가미 툴", command=lasso_tool).pack(pady=5)
-    
-    
+
+
 def choose_color():
     """색상 선택을 위한 색상 선택기 호출"""
     global brush_color
     color_code = colorchooser.askcolor(title="Select color")[0]
     if color_code:
         # RGB -> BGR로 변환
-        brush_color = tuple(map(int, (color_code[2], color_code[1], color_code[0])))  # (B, G, R)
+        brush_color = tuple(
+            map(int, (color_code[2], color_code[1], color_code[0]))
+        )  # (B, G, R)
 
-        
+
 def on_brush_size_change(value):
     global brush_size
     brush_size = int(value)
 
+
 def blur_brush_size_change(value):
     global brush_size_blur
     brush_size_blur = int(value)
+
 
 def open_img():
     """이미지 열기 (한글 경로 지원 및 여백 포함)"""
@@ -198,6 +201,7 @@ def apply_edge_filter():  # 윤곽선 추출 필터를 적용하는 함수
 def apply_sharpen_filter():  # 선명 효과 필터를 적용하는 함수
     record_and_apply(image_effect.sharpen_filter)
 
+
 def apply_blur_adjustment(event):
     """
     마우스 드래그로 특정 영역에 블러 효과 적용
@@ -219,7 +223,11 @@ def apply_blur_adjustment(event):
 
         # 블러링 필터 적용
         record_and_apply(
-            image_effect.apply_blur, resized_image, start_point, end_point, brush_size_blur
+            image_effect.apply_blur,
+            resized_image,
+            start_point,
+            end_point,
+            brush_size_blur,
         )
 
         # 시작점 갱신
@@ -227,8 +235,8 @@ def apply_blur_adjustment(event):
 
     except Exception as e:
         print(f"Error applying blur adjustment: {e}")
-        
-        
+
+
 def apply_blur_filter():  # 블러 효과를 적용하는 함수
     global label
     label.bind("<ButtonPress-1>", on_mouse_press)
@@ -321,9 +329,8 @@ def apply_salt_pepper_removal(event):
         # 클릭 좌표 가져오기
     x, y = event.x, event.y
 
-        # 잡티 제거 적용
+    # 잡티 제거 적용
     record_and_apply(image_effect.remove_salt_pepper, resized_image, (x, y))
-
 
 
 def adjust_salt_pepper_removal():
@@ -344,12 +351,13 @@ def liquify_tool():
     label.bind("<ButtonPress-1>", on_mouse_press)
     label.bind("<B1-Motion>", apply_liquify)
     label.bind("<ButtonRelease-1>", on_mouse_release)
-    
+
+
 def apply_color_adjustment(event):
     """
     색상 강조 기능을 적용하는 함수
     """
-    global brush_color,  brush_size, start_point
+    global brush_color, brush_size, start_point
     # 드래그된 좌표를 사용하여 apply_makeup 호출
     if resized_image is not None:
         end_point = (event.x, event.y)
@@ -358,10 +366,11 @@ def apply_color_adjustment(event):
             resized_image,
             start_point,
             end_point,
-            brush_color,   # 색상   # 강도
-            brush_size# 브러쉬 크기
+            brush_color,  # 색상   # 강도
+            brush_size,  # 브러쉬 크기
         )
         start_point = end_point
+
 
 def adjust_color_highlight():
     """

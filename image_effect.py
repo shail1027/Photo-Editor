@@ -10,11 +10,13 @@ selection = None
 undo_stack = []
 redo_stack = []
 
+
 def push_to_undo(img):
     """현재 상태를 undo 스택에 저장"""
     global undo_stack
     if img is not None:
         undo_stack.append(img.copy())
+
 
 def pop_from_undo():
     """undo 스택에서 상태를 가져옴"""
@@ -23,11 +25,13 @@ def pop_from_undo():
         return undo_stack.pop()
     return None
 
+
 def push_to_redo(img):
     """현재 상태를 redo 스택에 저장"""
     global redo_stack
     if img is not None:
         redo_stack.append(img.copy())
+
 
 def pop_from_redo():
     """redo 스택에서 상태를 가져옴"""
@@ -50,7 +54,7 @@ def get_image():  # 현재 이미지 반환
 def set_selection(cord):
     global selection
     selection = cord
-    
+
 
 def apply_to_selection_or_full(effect_func):
     global current_image, selection
@@ -64,8 +68,8 @@ def apply_to_selection_or_full(effect_func):
         current_image[y1:y2, x1:x2] = roi  # 원본 이미지에 반영
     else:
         current_image = effect_func(current_image)  # 전체 이미지에 효과 적용
-        
-        
+
+
 def retro_filter():  # 레트로 필터
     global current_image
     # 누리끼리한 2010년대 필터 느낌
@@ -86,7 +90,9 @@ def adjust_contrast(n, beta=0):
     try:
         # 입력 값 검증
         if not isinstance(n, (int, float)):
-            raise ValueError("Contrast multiplier (alpha) must be an integer or a float.")
+            raise ValueError(
+                "Contrast multiplier (alpha) must be an integer or a float."
+            )
         if not isinstance(beta, (int, float)):
             raise ValueError("Brightness offset (beta) must be an integer or a float.")
         if n <= 0:
@@ -103,7 +109,6 @@ def adjust_contrast(n, beta=0):
         print(f"Value Error: {e}")
     except Exception as e:
         print(f"Error adjusting contrast: {e}")
-
 
 
 def adjust_saturation(n):
@@ -161,13 +166,14 @@ def adjust_hue(hue_shift):
         # HSV를 BGR로 변환하여 이미지 업데이트
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
         print(f"Hue adjusted by {hue_shift} degrees.")
-    
+
     except ValueError as e:
         print(f"Value Error: {e}")
     except Exception as e:
         print(f"Error adjusting hue: {e}")
 
-def convert_to_grayscale(): # 흑백화
+
+def convert_to_grayscale():  # 흑백화
     global current_image
     if current_image is None:
         print("Error: No image to convert.")
@@ -180,18 +186,18 @@ def convert_to_grayscale(): # 흑백화
     current_image = cv2.merge([gray, gray, gray])
 
 
-def sharpen_filter(): # 선명 효과(샤프닝)
+def sharpen_filter():  # 선명 효과(샤프닝)
     global current_image
     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
     current_image = cv2.filter2D(current_image, -1, kernel)
 
 
-def edge_detection(): # 윤곽선 추출
+def edge_detection():  # 윤곽선 추출
     global current_image
 
     gray = cv2.cvtColor(current_image, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 100, 200) 
-    current_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR) 
+    edges = cv2.Canny(gray, 100, 200)
+    current_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
 
 
 def apply_blur(image, start_point, end_point, radius):
@@ -217,72 +223,79 @@ def apply_blur(image, start_point, end_point, radius):
     current_image = image
 
 
-def edge_emphasize(): # 윤곽선 강조(스케치 효과)
-    edge = 20 # 밝기 차이의 기준 값
+def edge_emphasize():  # 윤곽선 강조(스케치 효과)
+    edge = 20  # 밝기 차이의 기준 값
     global current_image
-    height, width, _ = current_image.shape # 현재 이미지의 높이, 너비
-    gray_image = cv2.cvtColor(current_image, cv2.COLOR_BGR2GRAY) # 밝기 정보만 사용할거기때문에 흑백으로 변환
-    temp = np.copy(current_image) # 기존 이미지 복사
+    height, width, _ = current_image.shape  # 현재 이미지의 높이, 너비
+    gray_image = cv2.cvtColor(
+        current_image, cv2.COLOR_BGR2GRAY
+    )  # 밝기 정보만 사용할거기때문에 흑백으로 변환
+    temp = np.copy(current_image)  # 기존 이미지 복사
 
-    for col in range(height): # 이미지의 픽셀을 순회하며 윤곽선을 계산
+    for col in range(height):  # 이미지의 픽셀을 순회하며 윤곽선을 계산
         for row in range(width):
             mono = int(gray_image[col, row])
 
             # 오른쪽과 아래쪽 픽셀을 비교하기때문에 이미지의 경계를 확인
-            if row + 1 < width and col + 1 < height: # 만약 경계에 걸리지 않는다면
-                right = int(gray_image[col, row + 1]) # 오른쪽 픽셀의 밝기 값
-                bottom = int(gray_image[col + 1, row]) # 아래 픽셀의 밝기 값
+            if row + 1 < width and col + 1 < height:  # 만약 경계에 걸리지 않는다면
+                right = int(gray_image[col, row + 1])  # 오른쪽 픽셀의 밝기 값
+                bottom = int(gray_image[col + 1, row])  # 아래 픽셀의 밝기 값
 
-                diff_right = abs(mono - right) # 현재 픽셀과 오른쪽 픽셀의 밝기 차
-                diff_bottom = abs(mono - bottom) # 현재 픽셀과 아래 픽셀의 밝기 차
+                diff_right = abs(mono - right)  # 현재 픽셀과 오른쪽 픽셀의 밝기 차
+                diff_bottom = abs(mono - bottom)  # 현재 픽셀과 아래 픽셀의 밝기 차
 
-                if diff_right > edge: # 만약 기준값(edge)보다 크다면 윤곽선으로 간주한다
-                        temp[col, row] = [diff_right] * 3
+                if (
+                    diff_right > edge
+                ):  # 만약 기준값(edge)보다 크다면 윤곽선으로 간주한다
+                    temp[col, row] = [diff_right] * 3
                 elif diff_bottom > edge:
-                        temp[col, row] = [diff_bottom] * 3
-                else: # 윤곽선이 아닐 경우 원래 픽셀 값을 유지
-                        temp[col, row] = current_image[col, row]
-            else: # 경계 픽셀은 원본 값을 유지
+                    temp[col, row] = [diff_bottom] * 3
+                else:  # 윤곽선이 아닐 경우 원래 픽셀 값을 유지
                     temp[col, row] = current_image[col, row]
+            else:  # 경계 픽셀은 원본 값을 유지
+                temp[col, row] = current_image[col, row]
 
     current_image = temp  # 결과 이미지를 저장
 
 
-def original(): # 원본 이미지로 되돌리기
+def original():  # 원본 이미지로 되돌리기
     global current_image, original_image
     current_image = original_image
-    
-    
+
+
 def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
     """픽셀 유동화 로직"""
     global current_image
     h, w = img.shape[:2]
-    
+
     # 드래그된 방향 계산
     dx, dy = end_point[0] - start_point[0], end_point[1] - start_point[1]
-    
+
     # 이미지 복사 (변형을 적용할 임시 이미지)
     output = img.copy()
-    
+
     # 유동화 영역을 위한 반복문
     for y in range(max(0, start_point[1] - radius), min(h, start_point[1] + radius)):
-        for x in range(max(0, start_point[0] - radius), min(w, start_point[0] + radius)):
+        for x in range(
+            max(0, start_point[0] - radius), min(w, start_point[0] + radius)
+        ):
             distance = np.sqrt((x - start_point[0]) ** 2 + (y - start_point[1]) ** 2)
-            
+
             # 반지름 내의 픽셀에 대해서만 유동화 적용
             if distance < radius:
                 ratio = (radius - distance) / radius  # 반지름 내 픽셀의 비율
                 new_x = int(x + dx * ratio * strength / 100)  # 새로운 x 좌표
                 new_y = int(y + dy * ratio * strength / 100)  # 새로운 y 좌표
-                
+
                 # 이미지 크기를 벗어나지 않도록 클리핑
                 new_x = np.clip(new_x, 0, w - 1)
                 new_y = np.clip(new_y, 0, h - 1)
-                
+
                 # 새로운 위치로 픽셀 이동
                 output[y, x] = img[new_y, new_x]
-    
+
     current_image = output  # 결과 이미지 갱신
+
 
 def custom_filter():
     """
@@ -305,24 +318,28 @@ def custom_filter():
         # Step 2: 하이라이트 조정 (-40)
         highlight_adjustment = -40
         hsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
-        hsv[:, :, 2] = np.clip(hsv[:, :, 2].astype(np.int16) + highlight_adjustment, 0, 255).astype(np.uint8)
+        hsv[:, :, 2] = np.clip(
+            hsv[:, :, 2].astype(np.int16) + highlight_adjustment, 0, 255
+        ).astype(np.uint8)
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
         # Step 3: 대비 조정 (+60)
         contrast_adjustment = 1.6  # 대비 조정 값 (alpha)
         beta = 0  # 밝기 보정 값
-        current_image = cv2.convertScaleAbs(current_image, alpha=contrast_adjustment, beta=beta)
+        current_image = cv2.convertScaleAbs(
+            current_image, alpha=contrast_adjustment, beta=beta
+        )
 
         # Step 4: 채도 조정 (-30)
         saturation_adjustment = 0.7  # 채도 조정 비율
         hsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
-        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_adjustment, 0, 255).astype(np.uint8)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_adjustment, 0, 255).astype(
+            np.uint8
+        )
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 
         # Step 5: 색 선명도 (+15)
-        sharpen_kernel = np.array([[0, -1, 0],
-                                    [-1, 5, -1],
-                                    [0, -1, 0]])
+        sharpen_kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
         current_image = cv2.filter2D(current_image, -1, sharpen_kernel)
 
     except Exception as e:
@@ -352,7 +369,9 @@ def temp_filter():
         # Step 2: 채도 -20
         saturation_adjustment = 0.8  # 채도 비율 (1.0 = 기본값, 0.8 = 20% 감소)
         hsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
-        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_adjustment, 0, 255).astype(np.uint8)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation_adjustment, 0, 255).astype(
+            np.uint8
+        )
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
         print(f"Step 2: Saturation decreased by 20% (scale={saturation_adjustment}).")
 
@@ -400,19 +419,20 @@ def remove_salt_pepper(image, center):
 
         # 필터링된 결과를 Resized 이미지에 반영
         image[y_start:y_end, x_start:x_end] = filtered_roi
-        print(f"Applied median filter to region: ({x_start}, {y_start}) to ({x_end}, {y_end})")
+        print(
+            f"Applied median filter to region: ({x_start}, {y_start}) to ({x_end}, {y_end})"
+        )
 
-        current_image =  image
+        current_image = image
 
     except Exception as e:
         print(f"Error in remove_salt_pepper: {e}")
-        current_image =  image
+        current_image = image
 
 
-
-
-
-def apply_makeup(image, start_point, end_point, color=(0, 0, 255), size=20, intensity=0.01):
+def apply_makeup(
+    image, start_point, end_point, color=(0, 0, 255), size=20, intensity=0.01
+):
     """
     특정 영역의 색상을 강조 (브러시 스타일)
     :param image: 입력 이미지
@@ -448,7 +468,9 @@ def apply_makeup(image, start_point, end_point, color=(0, 0, 255), size=20, inte
 
         # 알파 블렌딩으로 기존 이미지와 혼합
         mask_float = mask.astype(np.float32) / 255.0  # 0~1 범위로 정규화
-        blended_roi = roi.astype(np.float32) * (1 - intensity) + mask_float * intensity * 255
+        blended_roi = (
+            roi.astype(np.float32) * (1 - intensity) + mask_float * intensity * 255
+        )
 
         # 원본 이미지에 반영
         image[y_start:y_end, x_start:x_end] = blended_roi.astype(np.uint8)
