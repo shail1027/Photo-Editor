@@ -76,45 +76,28 @@ def adjust_contrast(n, beta=0):
         return
 
     try:
-        # 입력 값 검증
-        if not isinstance(n, (int, float)):
-            raise ValueError(
-                "Contrast multiplier (alpha) must be an integer or a float."
-            )
-        if not isinstance(beta, (int, float)):
-            raise ValueError("Brightness offset (beta) must be an integer or a float.")
-        if n <= 0:
-            raise ValueError("Contrast multiplier (alpha) must be greater than 0.")
-
         # 대비 조정
         temp = cv2.convertScaleAbs(current_image, alpha=n, beta=beta)
 
         # 값이 0~255 범위를 벗어나지 않도록 자동 처리
         current_image = np.clip(temp, 0, 255).astype(np.uint8)
-        print(f"Contrast adjusted with alpha={n}, beta={beta}.")
 
     except ValueError as e:
         print(f"Value Error: {e}")
     except Exception as e:
-        print(f"Error adjusting contrast: {e}")
+        print(f"Error: {e}")
 
 
 # ------ 채도 조정 ------#
 def adjust_saturation(n):
-    """채도 조정 함수 (예외 처리 포함)"""
+    """채도 조정 함수"""
     global current_image
 
     if current_image is None:
-        print("Error: No image to adjust.")
+        print("Error: No image.")
         return
 
     try:
-        # n 값 검증
-        if not isinstance(n, (int, float)):
-            raise ValueError("Saturation multiplier must be an integer or a float.")
-        if n < 0:
-            raise ValueError("Saturation multiplier cannot be negative.")
-
         # 이미지 HSV 변환
         hsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
 
@@ -124,28 +107,23 @@ def adjust_saturation(n):
 
         # HSV를 BGR로 변환하여 이미지 업데이트
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        print(f"Saturation adjusted with multiplier {n}.")
 
     except ValueError as e:
         print(f"Value Error: {e}")
     except Exception as e:
-        print(f"Error adjusting saturation: {e}")
+        print(f"Error : {e}")
 
 
 # ------ 색조 조정 ------#
 def adjust_hue(hue_shift):
-    """색조 조정 함수 (예외 처리 포함)"""
+    """색조 조정 함수"""
     global current_image
 
     if current_image is None:
-        print("Error: No image to adjust.")
+        print("Error: No image.")
         return
 
     try:
-        # hue_shift 값 범위 검증
-        if not isinstance(hue_shift, (int, float)):
-            raise ValueError("hue_shift must be an integer or a float.")
-
         # 이미지 HSV 변환
         hsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
 
@@ -155,19 +133,19 @@ def adjust_hue(hue_shift):
 
         # HSV를 BGR로 변환하여 이미지 업데이트
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        print(f"Hue adjusted by {hue_shift} degrees.")
 
     except ValueError as e:
         print(f"Value Error: {e}")
     except Exception as e:
-        print(f"Error adjusting hue: {e}")
+        print(f"Error : {e}")
 
 
 # ------ 이미지 흑백화 ------#
-def convert_to_grayscale():  # 흑백화
+def convert_to_grayscale():
+    """이미지 흑백화"""
     global current_image
     if current_image is None:
-        print("Error: No image to convert.")
+        print("Error: No image.")
         return
 
     # 밝기(Grayscale)를 계산
@@ -178,7 +156,8 @@ def convert_to_grayscale():  # 흑백화
 
 
 # ------ 윤곽선 추출 ------#
-def edge_detection():  # 윤곽선 추출
+def edge_detection():
+    """이미지 윤곽선 추출"""
     global current_image
 
     gray = cv2.cvtColor(current_image, cv2.COLOR_BGR2GRAY)
@@ -188,7 +167,7 @@ def edge_detection():  # 윤곽선 추출
 
 # ------ 블러 적용 ------#
 def apply_blur(image, start_point, end_point, radius):
-    """블러 효과를 적용하는 함수"""
+    """블러 효과를 적용하는"""
     global current_image
     x, y = end_point
     print(radius)
@@ -211,14 +190,16 @@ def apply_blur(image, start_point, end_point, radius):
 
 
 # ------ 선명 효과 적용 ------#
-def sharpen_filter():  # 선명 효과(샤프닝)
+def sharpen_filter():
+    """선명 효과(샤프닝) 적용"""
     global current_image
     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
     current_image = cv2.filter2D(current_image, -1, kernel)
 
 
 # ------ 레트로 필터 적용 ------#
-def retro_filter():  # 레트로 필터
+def retro_filter():
+    """레트로 느낌의 필터 적용"""
     global current_image
     # 누리끼리한 2010년대 필터 느낌
     b, g, r = cv2.split(current_image)  # BRG 채널 분리
@@ -230,7 +211,7 @@ def retro_filter():  # 레트로 필터
 # ------ 잡티제거 효과 적용 ------#
 def remove_noise(image, center):
     """
-    Resized 이미지에서 Salt-and-Pepper 잡티를 제거
+    이미지에서 잡티를 제거
     :param image: 처리할 Resized 이미지
     :param center: 클릭한 중심 좌표 (x, y)
     """
@@ -265,14 +246,14 @@ def remove_noise(image, center):
         current_image = image
 
     except Exception as e:
-        print(f"Error in remove_salt_pepper: {e}")
+        print(f"Error: {e}")
         current_image = image
 
 
 # ------ y2k필터 적용 ------#
 def y2k_filter():
     """
-    통합 필터 함수:
+    y2k필터 적용
     1. 대비 +60
     2. 채도 -20
     3. 모션 블러 적용
@@ -280,7 +261,7 @@ def y2k_filter():
     global current_image
 
     if current_image is None:
-        print("Error: No image to apply filter.")
+        print("Error: No image.")
         return
 
     try:
@@ -288,7 +269,6 @@ def y2k_filter():
         contrast = 1.6  # 대비 값 (1.0 = 기본값, 1.6 = 60% 증가)
         beta = 0  # 밝기 보정 값
         current_image = cv2.convertScaleAbs(current_image, alpha=contrast, beta=beta)
-        print(f"Step 1: Contrast increased by 60% (alpha={contrast}, beta={beta}).")
 
         # Step 2: 채도 -20
         saturation_adjustment = 0.8  # 채도 비율 (1.0 = 기본값, 0.8 = 20% 감소)
@@ -297,7 +277,6 @@ def y2k_filter():
             np.uint8
         )
         current_image = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        print(f"Step 2: Saturation decreased by 20% (scale={saturation_adjustment}).")
 
         # Step 3: 모션 블러 적용
         kernel_size = 7  # 모션 블러 커널 크기
@@ -305,9 +284,6 @@ def y2k_filter():
         np.fill_diagonal(motion_blur_kernel, 1)  # 대각선 방향으로 값 설정
         motion_blur_kernel /= kernel_size  # 정규화
         current_image = cv2.filter2D(current_image, -1, motion_blur_kernel)
-        print(f"Step 3: Motion blur applied with kernel size {kernel_size}.")
-
-        print("All filters applied successfully.")
 
     except Exception as e:
         print(f"Error applying filters: {e}")
@@ -316,13 +292,13 @@ def y2k_filter():
 # ------ 무채색 필터 적용 ------#
 def mono_filter():
     """
-    사용자 지정 필터 적용:
+    무채색 필터 적용
     휘도 -20, 하이라이트 -40, 대비 +60, 채도 -30, 색 선명도 +15, 필터 (모노 or 느와르) +40
     """
     global current_image
 
     if current_image is None:
-        print("Error: No image to apply the custom filter.")
+        print("Error: No image.")
         return
 
     try:
@@ -360,11 +336,12 @@ def mono_filter():
         current_image = cv2.filter2D(current_image, -1, sharpen_kernel)
 
     except Exception as e:
-        print(f"Error applying custom filter: {e}")
+        print(f"Error applying filter: {e}")
 
 
 # ------ 윤곽선 강조 효과 적용 ------#
-def edge_emphasize():  # 윤곽선 강조(스케치 효과)
+def edge_emphasize():
+    """윤곽선 강조 효과(스케치 하듯)"""
     edge = 20  # 밝기 차이의 기준 값
     global current_image
     height, width, _ = current_image.shape  # 현재 이미지의 높이, 너비
@@ -401,7 +378,7 @@ def edge_emphasize():  # 윤곽선 강조(스케치 효과)
 
 # ------ 픽셀 유동화 적용 ------#
 def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
-    """픽셀 유동화 로직"""
+    """픽셀 유동화 적용"""
     global current_image
     h, w = img.shape[:2]
 
@@ -483,5 +460,4 @@ def apply_makeup(
         current_image = image
 
     except Exception as e:
-        print(f"Error in apply_makeup: {e}")
-        return None
+        print(f"Error applying filters: {e}")

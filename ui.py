@@ -17,7 +17,7 @@ blur_brush = 20 # 블러효과 브러시 사이즈
 
 
 def ui(root):
-    """UI를 구성하는 함수수"""
+    """UI를 구성하는 함수"""
 
     global label, blur_brush
 
@@ -201,7 +201,7 @@ def apply_blur_adjustment(event):
     global start_point, resized_image, blur_brush
 
     if resized_image is None:
-        print("Error: Resized 이미지가 없습니다.")
+        print("Error: 이미지가 없습니다.")
         return
 
     try:
@@ -221,7 +221,7 @@ def apply_blur_adjustment(event):
         start_point = end_point
 
     except Exception as e:
-        print(f"Error applying blur adjustment: {e}")
+        print(f"Error: {e}")
 
 
 def apply_blur_filter():
@@ -274,7 +274,7 @@ def apply_nosie_remove():
 
     # 마우스 이벤트 바인딩
     label.bind("<ButtonPress-1>", on_mouse_press)
-    label.bind("<B1-Motion>", apply_salt_pepper_removal)
+    label.bind("<B1-Motion>", apply_noise_remove_image)
     label.bind("<ButtonRelease-1>", on_mouse_release)
 
 
