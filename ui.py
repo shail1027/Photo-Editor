@@ -10,16 +10,16 @@ start_point = None  # 선택 시작점
 end_point = None  # 선택 끝점점
 tk_img = None  # tkinter에서 사용할 이미지 객체
 
-brush_color = (0, 0, 255)
-brush_size = 20
-brush_size_blur = 20
-# scale = None
+brush_color = (0, 0, 255) # 메이크업 필터 브러시 색
+brush_size = 20 # 메이크업 필터 브러시 사이즈 
+
+blur_brush = 20 # 블러효과 브러시 사이즈
 
 
 def ui(root):
     """UI를 구성하는 함수수"""
 
-    global label, brush_size_blur
+    global label, blur_brush
 
     # 왼쪽 UI
     frame = tk.Frame(root, width=200, height=600)
@@ -79,7 +79,7 @@ def ui(root):
     )
     brush_size_slider_blur.pack(pady=5)
     brush_size_slider_blur.bind(
-        "<Motion>", lambda event: blur_brush_size_change(brush_size_slider_blur.get())
+        "<Motion>", lambda event: blur_brush_size(brush_size_slider_blur.get())
     )
 
     # 블러 효과 활성화 버튼
@@ -91,19 +91,19 @@ def ui(root):
     # 레트로 필터 버튼
     tk.Button(right_frame, text="레트로 필터", command=apply_retro_filter).pack(pady=5)
 
-    tk.Button(right_frame, text="픽셀 유동화", command=liquify_tool).pack(pady=5)
+    tk.Button(right_frame, text="픽셀 유동화", command=liquify_apply).pack(pady=5)
 
-    tk.Button(right_frame, text="무채색 필터", command=apply_custom_filter).pack(pady=5)
+    tk.Button(right_frame, text="무채색 필터", command=apply_mono_filter).pack(pady=5)
 
     brush_size_slider = tk.Scale(
         right_frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
     )
     brush_size_slider.pack(pady=5)
     brush_size_slider.bind(
-        "<Motion>", lambda event: on_brush_size_change(brush_size_slider.get())
+        "<Motion>", lambda event: brush_size_change(brush_size_slider.get())
     )
     makeup_button = tk.Button(
-        right_frame, text="Makeup", command=adjust_color_highlight
+        right_frame, text="Makeup", command=apply_makeup
     )
     makeup_button.pack(pady=5)
 
@@ -111,12 +111,12 @@ def ui(root):
     color_button.pack(pady=5)
 
     # 잡티제거 필터
-    tk.Button(right_frame, text="페퍼 필터", command=adjust_salt_pepper_removal).pack(
+    tk.Button(right_frame, text="페퍼 필터", command=apply_nosie_remove).pack(
         pady=5
     )
 
     # y2k 필터
-    tk.Button(right_frame, text="y2k 필터", command=apply_temp_filter).pack(pady=5)
+    tk.Button(right_frame, text="y2k 필터", command=apply_y2k_filter).pack(pady=5)
 
     # 윤곽선 강조(윤곽선 스케치 느낌의 필터) 버튼
     tk.Button(right_frame, text="윤곽선 강조", command=apply_edgeS_filter).pack(pady=5)
@@ -146,7 +146,7 @@ def open_img():
         img = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)  # OpenCV 형식으로 변환
 
         # 이미지 상태 저장 및 표시
-        image_effect.set_image(img)
+        image_effect.init_image(img)
         display_image()
     except Exception as e:
         print(f"Error loading image: {e}")
@@ -198,7 +198,7 @@ def apply_edge_filter():
 def apply_blur_adjustment(event):
     """마우스로 특정 부분에 블러 적용"""
 
-    global start_point, resized_image, brush_size_blur
+    global start_point, resized_image, blur_brush
 
     if resized_image is None:
         print("Error: Resized 이미지가 없습니다.")
@@ -214,7 +214,7 @@ def apply_blur_adjustment(event):
             resized_image,
             start_point,
             end_point,
-            brush_size_blur,
+            blur_brush,
         )
 
         # 시작점 갱신
@@ -232,10 +232,10 @@ def apply_blur_filter():
     label.bind("<ButtonRelease-1>", on_mouse_release)
 
 
-def blur_brush_size_change(value):
+def blur_brush_size(value):
     """블러 브러쉬 크기 조절"""
-    global brush_size_blur
-    brush_size_blur = int(value)
+    global blur_brush
+    blur_brush = int(value)
 
 
 # ------ 선명 효과 적용 ------#
@@ -251,7 +251,7 @@ def apply_retro_filter():
 
 
 # ------ 잡티 제거 효과 적용 ------#
-def apply_salt_pepper_removal(event):
+def apply_noise_remove_image(event):
     """마우스로 이미지에서 잡티 제거를 적용"""
 
     global resized_image
@@ -264,10 +264,10 @@ def apply_salt_pepper_removal(event):
     x, y = event.x, event.y
 
     # 잡티 제거 적용
-    record_and_apply(image_effect.remove_salt_pepper, resized_image, (x, y))
+    record_and_apply(image_effect.remove_noise, resized_image, (x, y))
 
 
-def adjust_salt_pepper_removal():
+def apply_nosie_remove():
     """잡티 제거 모드 활성화"""
 
     global label
@@ -279,15 +279,15 @@ def adjust_salt_pepper_removal():
 
 
 # ------ y2k필터 적용 ------#
-def apply_temp_filter():
+def apply_y2k_filter():
     """y2k필터 적용"""
-    record_and_apply(image_effect.temp_filter)
+    record_and_apply(image_effect.y2k_filter)
 
 
 # ------ 무채색 필터 적용 ------#
-def apply_custom_filter():
+def apply_mono_filter():
     """무채색 느낌의 보정 필터 적용"""
-    record_and_apply(image_effect.custom_filter)
+    record_and_apply(image_effect.mono_filter)
 
 
 # ------ 윤곽선 강조 필터 적용 ------#
@@ -348,7 +348,7 @@ def redo():
 
 
 # ------ 픽셀 유동화 실행 및 적용------#
-def liquify_tool():
+def liquify_apply():
     """픽셀 유동화 활성화"""
     label.bind("<ButtonPress-1>", on_mouse_press)
     label.bind("<B1-Motion>", apply_liquify)
@@ -396,7 +396,7 @@ def apply_color_adjustment(event):
         start_point = end_point
 
 
-def adjust_color_highlight():
+def apply_makeup():
     """색상 강조 모드 활성화"""
 
     global label
@@ -416,7 +416,7 @@ def choose_color():
         )  # (B, G, R)
 
 
-def on_brush_size_change(value):
+def brush_size_change(value):
     """브러쉬 크기 적용"""
     global brush_size
     brush_size = int(value)
