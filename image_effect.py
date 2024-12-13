@@ -387,20 +387,21 @@ def remove_salt_pepper(image, center):
 
 
 
-def apply_makeup(image, start_point, end_point, color=(0, 0, 255), intensity=0.01):
+def apply_makeup(image, start_point, end_point, color=(0, 0, 255), size=20, intensity=0.01):
     """
     특정 영역의 색상을 강조 (브러시 스타일)
     :param image: 입력 이미지
     :param start_point: 시작 좌표
     :param end_point: 끝 좌표
-    :param color: 적용할 색상 ('red', 'pink', etc.)
+    :param color: 적용할 색상 (기본 빨간색)
     :param intensity: 색상 강도 (0 ~ 1)
+    :param size: 브러시 크기
     :return: 색상 강조된 이미지
     """
     global current_image
     try:
         x, y = end_point
-        radius = 20  # 브러시 반지름
+        radius = size  # 브러시 반지름을 size로 설정
 
         # 이미지 크기 가져오기
         h, w = image.shape[:2]
@@ -415,7 +416,7 @@ def apply_makeup(image, start_point, end_point, color=(0, 0, 255), intensity=0.0
         # 브러시 효과를 위한 마스크 생성
         mask = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
         center = (roi.shape[1] // 2, roi.shape[0] // 2)
-        cv2.circle(mask, center, radius, color, -1)
+        cv2.circle(mask, center, radius, color, -1)  # 브러시 색상 적용
 
         # 마스크를 부드럽게 처리 (경계 부드럽게)
         mask = cv2.GaussianBlur(mask, (61, 61), sigmaX=50)
@@ -427,7 +428,7 @@ def apply_makeup(image, start_point, end_point, color=(0, 0, 255), intensity=0.0
         # 원본 이미지에 반영
         image[y_start:y_end, x_start:x_end] = blended_roi.astype(np.uint8)
 
-        current_image =  image
+        current_image = image
 
     except Exception as e:
         print(f"Error in apply_makeup: {e}")

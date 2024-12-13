@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog  # 파일 열기/저장을 위한 모듈
+from tkinter import filedialog, colorchooser  # 파일 열기/저장을 위한 모듈
 from PIL import Image, ImageTk, ImageDraw  # 이미지 처리를 위한 Pillow 라이브러리
 import cv2
 import image_effect
@@ -10,6 +10,10 @@ start_point = None  # 선택 시작점
 end_point = None
 tk_img = None  #
 start_point = None
+brush_color = (0, 0, 255)
+
+# 기본 브러쉬 크기와 강도
+brush_size = 20
 
 scale = None
 
@@ -89,8 +93,20 @@ def ui(root):  # UI를 구성하는 함수
 
     tk.Button(right_frame, text="빈티지 필터", command=apply_custom_filter).pack(pady=5)
     
-    tk.Button(right_frame, text="화장 필터", command=adjust_color_highlight).pack(pady=5)
-
+    brush_size_slider = tk.Scale(
+    frame, from_=1, to=100, orient=tk.HORIZONTAL, label="브러쉬 크기"
+    )
+    
+    brush_size_slider.pack(pady=5)
+    brush_size_slider.bind("<Motion>", lambda event: on_brush_size_change(brush_size_slider.get()))
+    makeup_button = tk.Button(frame, text="Makeup", command=adjust_color_highlight)
+    makeup_button.pack(pady=5)
+    
+    color_button = tk.Button(frame, text="색상 선택", command=choose_color)
+    color_button.pack(pady=5)
+    
+    
+    
     tk.Button(right_frame, text="페퍼 필터", command=adjust_salt_pepper_removal).pack(
         pady=5
     )
@@ -110,6 +126,18 @@ def ui(root):  # UI를 구성하는 함수
     tk.Button(right_frame, text="다시 실행", command=redo).pack(pady=5)
     # tk.Button(right_frame, text="올가미 툴", command=lasso_tool).pack(pady=5)
 
+def choose_color():
+    """색상 선택을 위한 색상 선택기 호출"""
+    global brush_color
+    color_code = colorchooser.askcolor(title="Select color")[0]
+    if color_code:
+        # RGB -> BGR로 변환
+        brush_color = tuple(map(int, (color_code[2], color_code[1], color_code[0])))  # (B, G, R)
+
+        
+def on_brush_size_change(value):
+    global brush_size
+    brush_size = int(value)
 
 def open_img():
     """이미지 열기 (한글 경로 지원 및 여백 포함)"""
@@ -277,42 +305,21 @@ def liquify_tool():
     
 def apply_color_adjustment(event):
     """
-    마우스 드래그로 특정 영역에 색상 강조 적용
+    색상 강조 기능을 적용하는 함수
     """
-    global start_point, resized_image
-
-    if resized_image is None:
-        print("Error: Resized 이미지가 없습니다.")
-        return
-
-    if start_point is None:
-        return
-
-    try:
-        # 드래그 끝점
+    global brush_color,  brush_size, start_point
+    # 드래그된 좌표를 사용하여 apply_makeup 호출
+    if resized_image is not None:
         end_point = (event.x, event.y)
-
-        # 유효한 좌표인지 확인
-        if not (0 <= start_point[0] < resized_image.shape[1] and
-                0 <= start_point[1] < resized_image.shape[0]):
-            print("Error: Start point is out of bounds.")
-            return
-
-        if not (0 <= end_point[0] < resized_image.shape[1] and
-                0 <= end_point[1] < resized_image.shape[0]):
-            print("Error: End point is out of bounds.")
-            return
-
-        # record_and_apply를 통해 색상 강조 실행
         record_and_apply(
-            image_effect.apply_makeup, resized_image, start_point, end_point
+            image_effect.apply_makeup,
+            resized_image,
+            start_point,
+            end_point,
+            brush_color,   # 색상   # 강도
+            brush_size# 브러쉬 크기
         )
-
-        # 시작점 갱신
         start_point = end_point
-
-    except Exception as e:
-        print(f"Error applying color adjustment: {e}")
 
 def adjust_color_highlight():
     """
