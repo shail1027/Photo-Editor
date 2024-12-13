@@ -387,7 +387,7 @@ def remove_salt_pepper(image, center):
 
 
 
-def apply_makeup(image, start_point, end_point, color='red', intensity=0.5):
+def apply_makeup(image, start_point, end_point, color=(0, 0, 255), intensity=0.01):
     """
     특정 영역의 색상을 강조 (브러시 스타일)
     :param image: 입력 이미지
@@ -399,29 +399,33 @@ def apply_makeup(image, start_point, end_point, color='red', intensity=0.5):
     """
     global current_image
     try:
-        # 중심 좌표 설정
         x, y = end_point
-        radius = 10  # 브러시 반지름
+        radius = 20  # 브러시 반지름
+
+        # 이미지 크기 가져오기
+        h, w = image.shape[:2]
 
         # ROI 경계 설정
-        x_start, x_end = max(0, x - radius), min(image.shape[1], x + radius)
-        y_start, y_end = max(0, y - radius), min(image.shape[0], y + radius)
+        x_start, x_end = max(0, x - radius), min(w, x + radius)
+        y_start, y_end = max(0, y - radius), min(h, y + radius)
 
         # ROI 추출
-        roi = image[y_start:y_end, x_start:x_end]
+        roi = image[y_start:y_end, x_start:x_end].copy()
 
-        # 색상 강조 (HSV 색상 공간으로 변환)
-        hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-        if color == 'red':
-            hsv[:, :, 0] = (hsv[:, :, 0] + 5) % 180  # Hue 증가 (빨간색 강조)
-            hsv[:, :, 1] = np.clip(hsv[:, :, 1] + int(255 * intensity), 0, 255)  # 채도 증가
+        # 브러시 효과를 위한 마스크 생성
+        mask = np.zeros((roi.shape[0], roi.shape[1], 3), dtype=np.uint8)
+        center = (roi.shape[1] // 2, roi.shape[0] // 2)
+        cv2.circle(mask, center, radius, color, -1)
 
-        # 블렌딩 처리
-        adjusted_roi = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-        adjusted_roi = cv2.GaussianBlur(adjusted_roi, (5, 5), sigmaX=2)
+        # 마스크를 부드럽게 처리 (경계 부드럽게)
+        mask = cv2.GaussianBlur(mask, (61, 61), sigmaX=50)
+
+        # 알파 블렌딩으로 기존 이미지와 혼합
+        mask_float = mask.astype(np.float32) / 255.0  # 0~1 범위로 정규화
+        blended_roi = roi.astype(np.float32) * (1 - intensity) + mask_float * intensity * 255
 
         # 원본 이미지에 반영
-        image[y_start:y_end, x_start:x_end] = adjusted_roi
+        image[y_start:y_end, x_start:x_end] = blended_roi.astype(np.uint8)
 
         current_image =  image
 
