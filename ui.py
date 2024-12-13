@@ -103,7 +103,7 @@ def ui(root):
         "<Motion>", lambda event: brush_size_change(brush_size_slider.get())
     )
     makeup_button = tk.Button(
-        right_frame, text="Makeup", command=apply_makeup
+        right_frame, text="메이크업", command=apply_makeup
     )
     makeup_button.pack(pady=5)
 
@@ -111,7 +111,7 @@ def ui(root):
     color_button.pack(pady=5)
 
     # 잡티제거 필터
-    tk.Button(right_frame, text="페퍼 필터", command=apply_nosie_remove).pack(
+    tk.Button(right_frame, text="잡티 제거", command=apply_nosie_remove).pack(
         pady=5
     )
 

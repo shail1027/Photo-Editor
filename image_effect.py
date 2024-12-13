@@ -161,7 +161,7 @@ def edge_detection():
     global current_image
 
     gray = cv2.cvtColor(current_image, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 100, 200)
+    edges = cv2.Canny(gray, 50, 150)
     current_image = cv2.cvtColor(edges, cv2.COLOR_GRAY2BGR)
 
 
@@ -239,22 +239,18 @@ def remove_noise(image, center):
 
         # 필터링된 결과를 Resized 이미지에 반영
         image[y_start:y_end, x_start:x_end] = filtered_roi
-        print(
-            f"Applied median filter to region: ({x_start}, {y_start}) to ({x_end}, {y_end})"
-        )
-
         current_image = image
 
     except Exception as e:
         print(f"Error: {e}")
-        current_image = image
+
 
 
 # ------ y2k필터 적용 ------#
 def y2k_filter():
     """
     y2k필터 적용
-    1. 대비 +60
+    1. 대비 +40
     2. 채도 -20
     3. 모션 블러 적용
     """
@@ -266,7 +262,7 @@ def y2k_filter():
 
     try:
         # Step 1: 대비 +60
-        contrast = 1.6  # 대비 값 (1.0 = 기본값, 1.6 = 60% 증가)
+        contrast = 1.4  # 대비 값 (1.0 = 기본값, 1.6 = 60% 증가)
         beta = 0  # 밝기 보정 값
         current_image = cv2.convertScaleAbs(current_image, alpha=contrast, beta=beta)
 
@@ -280,7 +276,7 @@ def y2k_filter():
 
         # Step 3: 모션 블러 적용
         kernel_size = 7  # 모션 블러 커널 크기
-        motion_blur_kernel = np.zeros((kernel_size, kernel_size))
+        motion_blur_kernel = np.zeros((kernel_size, kernel_size)) 
         np.fill_diagonal(motion_blur_kernel, 1)  # 대각선 방향으로 값 설정
         motion_blur_kernel /= kernel_size  # 정규화
         current_image = cv2.filter2D(current_image, -1, motion_blur_kernel)
@@ -377,7 +373,7 @@ def edge_emphasize():
 
 
 # ------ 픽셀 유동화 적용 ------#
-def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
+def liquify_pixels(img, start_point, end_point, strength=50, radius=20):
     """픽셀 유동화 적용"""
     global current_image
     h, w = img.shape[:2]
@@ -415,16 +411,7 @@ def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
 def apply_makeup(
     image, start_point, end_point, color=(0, 0, 255), size=20, intensity=0.01
 ):
-    """
-    특정 영역의 색상을 강조 (브러시 스타일)
-    :param image: 입력 이미지
-    :param start_point: 시작 좌표
-    :param end_point: 끝 좌표
-    :param color: 적용할 색상 (기본 빨간색)
-    :param intensity: 색상 강도 (0 ~ 1)
-    :param size: 브러시 크기
-    :return: 색상 강조된 이미지
-    """
+    """특정 영역의 색상을 강조 (브러시 스타일) """
     global current_image
     try:
         x, y = end_point
@@ -460,4 +447,4 @@ def apply_makeup(
         current_image = image
 
     except Exception as e:
-        print(f"Error applying filters: {e}")
+        print(f"Error : {e}")
