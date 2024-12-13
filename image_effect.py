@@ -257,24 +257,32 @@ def liquify_pixels(img, start_point, end_point, strength=10, radius=20):
     """픽셀 유동화 로직"""
     global current_image
     h, w = img.shape[:2]
+    
+    # 드래그된 방향 계산
     dx, dy = end_point[0] - start_point[0], end_point[1] - start_point[1]
-
+    
+    # 이미지 복사 (변형을 적용할 임시 이미지)
     output = img.copy()
+    
+    # 유동화 영역을 위한 반복문
     for y in range(max(0, start_point[1] - radius), min(h, start_point[1] + radius)):
         for x in range(max(0, start_point[0] - radius), min(w, start_point[0] + radius)):
             distance = np.sqrt((x - start_point[0]) ** 2 + (y - start_point[1]) ** 2)
+            
+            # 반지름 내의 픽셀에 대해서만 유동화 적용
             if distance < radius:
-                ratio = (radius - distance) / radius
-                new_x = int(x + dx * ratio * strength / 100)
-                new_y = int(y + dy * ratio * strength / 100)
-
+                ratio = (radius - distance) / radius  # 반지름 내 픽셀의 비율
+                new_x = int(x + dx * ratio * strength / 100)  # 새로운 x 좌표
+                new_y = int(y + dy * ratio * strength / 100)  # 새로운 y 좌표
+                
+                # 이미지 크기를 벗어나지 않도록 클리핑
                 new_x = np.clip(new_x, 0, w - 1)
                 new_y = np.clip(new_y, 0, h - 1)
-
-                output[y, x] = img[new_y, new_x]
                 
-    current_image = output
-
+                # 새로운 위치로 픽셀 이동
+                output[y, x] = img[new_y, new_x]
+    
+    current_image = output  # 결과 이미지 갱신
 
 def custom_filter():
     """

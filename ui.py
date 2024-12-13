@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, colorchooser  # 파일 열기/저장을 위한 모듈
+from tkinter import filedialog, colorchooser, messagebox  # 파일 열기/저장을 위한 모듈
 from PIL import Image, ImageTk, ImageDraw  # 이미지 처리를 위한 Pillow 라이브러리
 import cv2
 import image_effect
@@ -20,9 +20,7 @@ scale = None
 
 
 def ui(root):  # UI를 구성하는 함수
-    global label, brush_size_blur
-
-    # 왼쪽 사이드 UI
+    global label, brush_size_blur    # 왼쪽 사이드 UI
     frame = tk.Frame(root, width=200, height=600)
     frame.place(x=0, y=0)
 
@@ -135,7 +133,8 @@ def ui(root):  # UI를 구성하는 함수
     tk.Button(right_frame, text="되돌리기", command=undo).pack(pady=5)
     tk.Button(right_frame, text="다시 실행", command=redo).pack(pady=5)
     # tk.Button(right_frame, text="올가미 툴", command=lasso_tool).pack(pady=5)
-
+    
+    
 def choose_color():
     """색상 선택을 위한 색상 선택기 호출"""
     global brush_color
